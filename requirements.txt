@@ -1,0 +1,8 @@
+﻿Flask
+PyMuPDF
+sentence-transformers
+chromadb
+google-genai
+python-dotenv
+mysql-connector-python
+PyGithub
