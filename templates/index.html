@@ -1,220 +1,572 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Intelligence Hub</title>
-
+    <title>Multi-Source Intelligence Hub</title>
     <style>
-        * {
-            box-sizing: border-box;
-        }
-
+        * { box-sizing: border-box; }
         body {
             margin: 0;
-            padding: 30px 16px;
             font-family: Arial, sans-serif;
             background: #f1f5f9;
             color: #1e293b;
         }
-
-        .container {
-            max-width: 850px;
-            margin: auto;
+        html, body { height: 100%; }
+        body { overflow: hidden; }
+        .app-layout {
+            display: grid;
+            grid-template-columns: 280px minmax(0, 1fr);
+            height: 100vh;
+            overflow: hidden;
         }
-
-        header {
-            margin-bottom: 25px;
+        .sidebar { height: 100vh; overflow-y: auto; overscroll-behavior: contain; }
+        .main { height: 100vh; overflow-y: auto; overscroll-behavior: contain; }
+        .sidebar {
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 22px 14px;
         }
-
-        header h1 {
-            margin-bottom: 8px;
-            color: #1d4ed8;
+        .brand { font-size: 18px; font-weight: bold; line-height: 1.4; margin: 0 8px 20px; }
+        .new-chat {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #475569;
+            border-radius: 9px;
+            color: #fff;
+            background: #1e293b;
+            cursor: pointer;
+            font-size: 14px;
         }
-
-        header p {
-            color: #64748b;
-            line-height: 1.6;
+        .new-chat:hover { background: #334155; }
+        .sidebar-heading { margin: 24px 8px 10px; color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+        #conversation-list { display: grid; gap: 6px; }
+        .conversation-item {
+            width: 100%;
+            border: 0;
+            border-radius: 8px;
+            padding: 10px;
+            background: transparent;
+            color: #e2e8f0;
+            text-align: left;
+            cursor: pointer;
+            line-height: 1.4;
+            overflow-wrap: anywhere;
         }
-
+        .conversation-item:hover, .conversation-item.active { background: #334155; }
+        .conversation-meta { display: block; color: #94a3b8; font-size: 12px; margin-top: 4px; }
+        .sidebar-note { color: #94a3b8; font-size: 12px; line-height: 1.5; margin: 20px 8px; }
+        .main { min-width: 0; padding: 28px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        header { margin-bottom: 22px; }
+        header h1 { margin: 0 0 8px; color: #1d4ed8; font-size: 28px; }
+        header p, .hint { color: #64748b; line-height: 1.6; }
         .card {
-            background: white;
-            padding: 24px;
+            background: #fff;
+            padding: 22px;
             margin-bottom: 20px;
             border-radius: 14px;
             box-shadow: 0 4px 18px #0f172a0d;
         }
-
-        label {
-            display: block;
-            margin: 16px 0 8px;
-            font-weight: bold;
-        }
-
-        input[type="file"],
-        input[type="text"] {
+        label { display: block; margin: 16px 0 8px; font-weight: bold; }
+        input[type="file"], input[type="text"] {
             display: block;
             width: 100%;
             padding: 12px;
             border: 1px solid #cbd5e1;
             border-radius: 8px;
-            background: white;
+            background: #fff;
             font-size: 15px;
         }
-
-        button {
+        button.primary, .action-button {
             border: 0;
             border-radius: 8px;
-            padding: 12px 18px;
-            margin-top: 16px;
+            padding: 11px 16px;
+            margin-top: 14px;
             background: #2563eb;
-            color: white;
-            font-size: 15px;
+            color: #fff;
+            font-size: 14px;
             cursor: pointer;
         }
-
-        button:hover {
-            background: #1d4ed8;
-        }
-
-        .hint {
-            color: #64748b;
-            font-size: 13px;
-            line-height: 1.5;
-        }
-
-        .document-status {
-            padding: 14px;
-            border-radius: 9px;
-            background: #eff6ff;
-            margin-bottom: 20px;
-            overflow-wrap: anywhere;
-        }
-
-        .result {
-            background: #f0fdf4;
-            border-left: 4px solid #16a34a;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 20px;
-        }
-
-        .answer {
-            white-space: pre-wrap;
-            overflow-wrap: anywhere;
-            line-height: 1.7;
-        }
-
-        .sources {
-            color: #475569;
-            font-size: 14px;
-            margin-top: 16px;
-        }
-
-        .error {
-            background: #fef2f2;
-            color: #b91c1c;
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            overflow-wrap: anywhere;
-        }
-
-        footer {
-            color: #64748b;
-            font-size: 13px;
-            text-align: center;
-            padding: 15px;
+        button.primary:hover, .action-button:hover { background: #1d4ed8; }
+        button:disabled { opacity: .6; cursor: wait; }
+        .document-status { padding: 14px; border-radius: 9px; background: #eff6ff; margin-bottom: 16px; overflow-wrap: anywhere; }
+        .error { background: #fef2f2; color: #b91c1c; padding: 16px; border-radius: 8px; margin-bottom: 20px; overflow-wrap: anywhere; }
+        .chat-window { display: grid; gap: 16px; }
+        .empty-chat { padding: 24px 12px; text-align: center; color: #64748b; line-height: 1.7; }
+        .message { border-radius: 12px; padding: 16px; line-height: 1.7; overflow-wrap: anywhere; }
+        .message.question { background: #eff6ff; border: 1px solid #dbeafe; }
+        .message.answer { background: #f8fafc; border: 1px solid #e2e8f0; white-space: pre-wrap; }
+        .message-label { font-weight: bold; font-size: 12px; color: #64748b; text-transform: uppercase; margin-bottom: 6px; }
+        .message-body { white-space: pre-wrap; }
+        .sources { color: #475569; font-size: 13px; margin-top: 10px; }
+        .github-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin: 20px 0; }
+        .stat { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; }
+        .stat strong { display: block; font-size: 23px; margin-top: 8px; overflow-wrap: anywhere; }
+        .github-link { color: #2563eb; overflow-wrap: anywhere; }
+        .issue { padding: 14px 0; border-bottom: 1px solid #e2e8f0; overflow-wrap: anywhere; }
+        .issue:last-child { border-bottom: none; }
+        .issue p, .status-message { color: #64748b; font-size: 14px; line-height: 1.6; }
+        .analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 18px 0; }
+        .analytics-stat { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; }
+        .analytics-stat span { display: block; color: #64748b; font-size: 13px; }
+        .analytics-stat strong { display: block; font-size: 26px; margin-top: 8px; }
+        .activity-list { display: grid; gap: 12px; margin: 18px 0; }
+        .activity-row { display: grid; grid-template-columns: 95px minmax(0, 1fr) 35px; gap: 10px; align-items: center; font-size: 13px; }
+        .activity-track { height: 12px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
+        .activity-bar { height: 100%; background: #2563eb; border-radius: 999px; min-width: 0; }
+        .analytics-list { display: grid; gap: 10px; }
+        .analytics-entry { border-bottom: 1px solid #e2e8f0; padding: 10px 0; overflow-wrap: anywhere; }
+        .analytics-entry:last-child { border-bottom: 0; }
+        .analytics-entry small { display: block; color: #64748b; margin-top: 5px; }
+        footer { color: #64748b; font-size: 13px; text-align: center; padding: 15px; }
+        @media (max-width: 760px) {
+            html, body { height: auto; }
+            body { overflow: auto; }
+            .app-layout { grid-template-columns: 1fr; height: auto; overflow: visible; }
+            .sidebar, .main { height: auto; overflow: visible; }
+            .sidebar { padding: 14px; }
+            #conversation-list { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+            .sidebar-heading { margin-top: 16px; }
+            .main { padding: 18px 12px; }
+            header h1 { font-size: 23px; }
+            .card { padding: 17px; }
         }
     </style>
 </head>
-
 <body>
-    <main class="container">
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="brand">Multi-Source<br>Intelligence Hub</div>
+        <button class="new-chat" type="button" id="new-chat">＋ New chat</button>
+        <div class="sidebar-heading">Conversation history</div>
+        <div id="conversation-list">
+            <p class="sidebar-note">Loading conversations…</p>
+        </div>
+        <p class="sidebar-note">Your questions and answers are saved in MySQL.</p>
+    </aside>
 
-        <header>
-            <h1>PDF Intelligence Hub</h1>
-            <p>
-                Upload a document once, then ask as many questions
-                as you need about its contents.
-            </p>
-        </header>
+    <main class="main">
+        <div class="container">
+            <header>
+                <h1>Multi-Source Intelligence Hub</h1>
+                <p>Ask questions about your PDFs and GitHub repository in one place.</p>
+            </header>
 
-        <section class="card">
-            <h2>1. Upload your document</h2>
+            {% if error %}
+                <section class="card error"><strong>Notice:</strong> {{ error }}</section>
+            {% endif %}
 
-            <div class="document-status">
-                {% if document_name %}
-                    <strong>Loaded document:</strong><br>
-                    {{ document_name }}
-                    <p class="hint">
-                        Your document is ready. Leave the upload field
-                        empty to continue asking questions about it.
-                    </p>
-                {% else %}
-                    <strong>No document loaded yet.</strong>
-                    <p class="hint">
-                        Upload a PDF to get started.
-                    </p>
-                {% endif %}
-            </div>
-
-            <form method="POST" enctype="multipart/form-data">
-                <label for="pdf">Choose a PDF (optional after first upload)</label>
-                <input
-                    type="file"
-                    id="pdf"
-                    name="pdf"
-                    accept=".pdf,application/pdf"
-                >
-
-                <p class="hint">
-                    Uploading another PDF replaces the currently loaded
-                    document. Leave this field empty for follow-up questions.
-                </p>
-
-                <label for="question">2. Ask a question</label>
-                <input
-                    type="text"
-                    id="question"
-                    name="question"
-                    placeholder="Example: Who is the project manager?"
-                    required
-                >
-
-                <button type="submit">Ask Question</button>
-            </form>
-        </section>
-
-        {% if error %}
-            <section class="error">
-                <strong>Something went wrong:</strong>
-                {{ error }}
-            </section>
-        {% endif %}
-
-        {% if answer %}
             <section class="card">
-                <h2>Answer</h2>
-
-                <div class="result">
-                    <div class="answer">{{ answer }}</div>
+                <h2>Chat</h2>
+                <div class="chat-window" id="chat-window">
+                    {% if chat_messages %}
+                        {% for message in chat_messages %}
+                            <div class="message question">
+                                <div class="message-label">You</div>
+                                <div class="message-body">{{ message.question }}</div>
+                            </div>
+                            <div class="message answer">
+                                <div class="message-label">Assistant</div>
+                                <div class="message-body">{{ message.answer }}</div>
+                                {% if message.source_document %}
+                                    <div class="sources">Sources: {{ message.source_document }}</div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    {% elif answer %}
+                        <div class="message question">
+                            <div class="message-label">You</div>
+                            <div class="message-body">{{ question }}</div>
+                        </div>
+                        <div class="message answer">
+                            <div class="message-label">Assistant</div>
+                            <div class="message-body">{{ answer }}</div>
+                        </div>
+                    {% else %}
+                        <div class="empty-chat" id="empty-chat">
+                            <strong>What would you like to explore?</strong><br>
+                            Upload a PDF or ask about your connected GitHub repository.
+                        </div>
+                    {% endif %}
                 </div>
-
-                {% if sources %}
-                    <p class="sources">
-                        <strong>Source pages:</strong>
-                        {{ sources | join(", ") }}
-                    </p>
+                {% if sources and not chat_messages %}
+                    <p class="sources">Relevant PDF pages: {{ sources | join(", ") }}</p>
                 {% endif %}
             </section>
-        {% endif %}
 
-        <footer>
-            Multi-Source Enterprise Intelligence Hub · Stage 1
-        </footer>
+            <section class="card">
+                <h2>Ask a question</h2>
+                <div class="document-status">
+                    {% if document_name %}
+                        <strong>Loaded PDF:</strong> {{ document_name }}
+                        <p class="hint">Leave the upload field empty to keep using the indexed PDF.</p>
+                    {% else %}
+                        <strong>No PDF loaded.</strong>
+                        <p class="hint">You can still ask questions about GitHub.</p>
+                    {% endif %}
+                </div>
+                <form method="POST" enctype="multipart/form-data" id="chat-form">
+                    <input type="hidden" name="conversation_id" id="conversation-id" value="{{ conversation_id or '' }}">
+                    <label for="pdf">Choose a PDF (optional)</label>
+                    <input type="file" id="pdf" name="pdf" accept=".pdf,application/pdf">
+                    <p class="hint">Uploading another PDF replaces the currently indexed PDF.</p>
+                    <label for="question">Your question</label>
+                    <input type="text" id="question" name="question" placeholder="Ask about your PDF or GitHub…" required>
+                    <button class="primary" type="submit" id="ask-button">Send message</button>
+                </form>
+            </section>
 
+            <section class="card" id="analytics-dashboard">
+                <h2>Usage Analytics</h2>
+                <p class="hint">Usage statistics calculated from saved MySQL chat history.</p>
+                <p id="analytics-status" class="status-message" aria-live="polite">Loading analytics…</p>
+                <div id="analytics-content" hidden>
+                    <div class="analytics-grid">
+                        <div class="analytics-stat"><span>Total saved questions</span><strong id="analytics-total">0</strong></div>
+                        <div class="analytics-stat"><span>Conversations</span><strong id="analytics-conversations">0</strong></div>
+                        <div class="analytics-stat"><span>Questions today</span><strong id="analytics-today">0</strong></div>
+                        <div class="analytics-stat"><span>Questions in last 7 days</span><strong id="analytics-week">0</strong></div>
+                    </div>
+                    <h3>Daily activity (last 7 days)</h3>
+                    <div id="analytics-activity" class="activity-list"></div>
+                    <h3>Recent questions</h3>
+                    <div id="analytics-recent" class="analytics-list"></div>
+                    <h3>Source context breakdown</h3>
+                    <div id="analytics-sources" class="analytics-list"></div>
+                    <p class="hint">Source context is the source label saved with each answer; it indicates available/recorded context, not guaranteed model citation usage.</p>
+                </div>
+                <button class="action-button" type="button" id="refresh-analytics">Refresh Analytics</button>
+            </section>
+
+            <section class="card" id="github-dashboard">
+                <h2>GitHub Repository Dashboard</h2>
+                <p class="hint">Live repository details and open issues from GitHub.</p>
+                <p id="github-status" class="status-message">Loading GitHub information…</p>
+                <div id="github-content" hidden>
+                    <h3 id="repo-name"></h3>
+                    <p id="repo-description"></p>
+                    <a id="repo-url" class="github-link" href="#" target="_blank" rel="noopener noreferrer">Open repository on GitHub</a>
+                    <div class="github-stats">
+                        <div class="stat">Stars<strong id="repo-stars">—</strong></div>
+                        <div class="stat">Language<strong id="repo-language">—</strong></div>
+                        <div class="stat">Open issues<strong id="repo-issues">—</strong></div>
+                    </div>
+                    <h3>Open Issues</h3>
+                    <div id="issues-list"></div>
+                </div>
+                <button class="action-button" type="button" id="refresh-github">Refresh GitHub Data</button>
+            </section>
+            <footer>Multi-Source Intelligence Hub · PDF + MySQL + GitHub</footer>
+        </div>
     </main>
+</div>
+
+<script>
+    const conversationList = document.getElementById("conversation-list");
+    const conversationIdInput = document.getElementById("conversation-id");
+    const chatWindow = document.getElementById("chat-window");
+    const form = document.getElementById("chat-form");
+    const questionInput = document.getElementById("question");
+    const newChatButton = document.getElementById("new-chat");
+
+    function appendMessage(label, text, className, source) {
+        const message = document.createElement("div");
+        message.className = "message " + className;
+
+        const labelElement = document.createElement("div");
+        labelElement.className = "message-label";
+        labelElement.textContent = label;
+
+        const body = document.createElement("div");
+        body.className = "message-body";
+        body.textContent = text || "";
+
+        message.appendChild(labelElement);
+        message.appendChild(body);
+
+        if (source) {
+            const sourceElement = document.createElement("div");
+            sourceElement.className = "sources";
+            sourceElement.textContent = "Sources: " + source;
+            message.appendChild(sourceElement);
+        }
+
+        chatWindow.appendChild(message);
+    }
+
+    function renderMessages(messages) {
+        chatWindow.replaceChildren();
+        if (!messages || messages.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "empty-chat";
+            empty.textContent = "This conversation has no saved messages yet.";
+            chatWindow.appendChild(empty);
+            return;
+        }
+
+        messages.forEach(message => {
+            appendMessage("You", message.question, "question");
+            appendMessage("Assistant", message.answer, "answer", message.source_document);
+        });
+    }
+
+    async function loadConversations(selectedId) {
+        try {
+            const response = await fetch("/api/conversations");
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || "Could not load conversation history.");
+            }
+
+            conversationList.replaceChildren();
+            if (data.conversations.length === 0) {
+                const note = document.createElement("p");
+                note.className = "sidebar-note";
+                note.textContent = "No saved conversations yet.";
+                conversationList.appendChild(note);
+                return;
+            }
+
+            data.conversations.forEach(conversation => {
+                const button = document.createElement("button");
+                button.type = "button";
+                button.className = "conversation-item" +
+                    (conversation.conversation_id === selectedId ? " active" : "");
+                button.textContent = conversation.title || "Untitled conversation";
+
+                const meta = document.createElement("span");
+                meta.className = "conversation-meta";
+                meta.textContent = conversation.message_count + " message(s)";
+                button.appendChild(meta);
+
+                button.addEventListener("click", () => openConversation(conversation.conversation_id));
+                conversationList.appendChild(button);
+            });
+        } catch (error) {
+            conversationList.replaceChildren();
+            const note = document.createElement("p");
+            note.className = "sidebar-note";
+            note.textContent = "Unable to load history: " + error.message;
+            conversationList.appendChild(note);
+        }
+    }
+
+    async function openConversation(id) {
+        try {
+            const response = await fetch("/api/conversations/" + encodeURIComponent(id));
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || "Could not open this conversation.");
+            }
+
+            conversationIdInput.value = data.conversation_id;
+            renderMessages(data.messages);
+            await loadConversations(data.conversation_id);
+            questionInput.focus();
+        } catch (error) {
+            alert("Could not open conversation: " + error.message);
+        }
+    }
+
+    newChatButton.addEventListener("click", () => {
+        form.reset();
+        conversationIdInput.value = "";
+        chatWindow.replaceChildren();
+        const empty = document.createElement("div");
+        empty.className = "empty-chat";
+        empty.textContent = "New chat started. Ask about your PDF or GitHub repository.";
+        chatWindow.appendChild(empty);
+        loadConversations("");
+        questionInput.focus();
+    });
+
+    form.addEventListener("submit", () => {
+        const button = document.getElementById("ask-button");
+        button.disabled = true;
+        button.textContent = "Working…";
+    });
+
+    // Usage analytics dashboard
+    const analyticsStatus = document.getElementById("analytics-status");
+    const analyticsContent = document.getElementById("analytics-content");
+    const analyticsRefreshButton = document.getElementById("refresh-analytics");
+
+    function formatAnalyticsDate(value, options = { month: "short", day: "numeric" }) {
+        if (!value) return "Unknown date";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return String(value);
+        return date.toLocaleDateString(undefined, options);
+    }
+
+    async function loadAnalytics() {
+        analyticsStatus.textContent = "Loading analytics…";
+        analyticsContent.hidden = true;
+        analyticsRefreshButton.disabled = true;
+
+        try {
+            const response = await fetch("/api/analytics", { headers: { "Accept": "application/json" } });
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || "Could not load analytics.");
+            }
+
+            const summary = data.summary || {};
+            document.getElementById("analytics-total").textContent = summary.total_questions ?? 0;
+            document.getElementById("analytics-conversations").textContent = summary.total_conversations ?? 0;
+            document.getElementById("analytics-today").textContent = summary.questions_today ?? 0;
+            document.getElementById("analytics-week").textContent = summary.questions_last_7_days ?? 0;
+
+            const activityContainer = document.getElementById("analytics-activity");
+            activityContainer.replaceChildren();
+            const activity = data.daily_activity || [];
+            const maxCount = Math.max(1, ...activity.map(row => Number(row.question_count) || 0));
+            if (!activity.length) {
+                const empty = document.createElement("p");
+                empty.className = "status-message";
+                empty.textContent = "No saved question activity in the last 7 days.";
+                activityContainer.appendChild(empty);
+            } else {
+                activity.forEach(row => {
+                    const count = Number(row.question_count) || 0;
+                    const line = document.createElement("div");
+                    line.className = "activity-row";
+                    const dateLabel = document.createElement("span");
+                    dateLabel.textContent = formatAnalyticsDate(row.activity_date);
+                    const track = document.createElement("div");
+                    track.className = "activity-track";
+                    const bar = document.createElement("div");
+                    bar.className = "activity-bar";
+                    bar.style.width = (count / maxCount * 100) + "%";
+                    bar.setAttribute("aria-label", count + " questions");
+                    track.appendChild(bar);
+                    const value = document.createElement("strong");
+                    value.textContent = count;
+                    line.append(dateLabel, track, value);
+                    activityContainer.appendChild(line);
+                });
+            }
+
+            const recentContainer = document.getElementById("analytics-recent");
+            recentContainer.replaceChildren();
+            const recent = data.recent_questions || [];
+            if (!recent.length) {
+                const empty = document.createElement("p");
+                empty.className = "status-message";
+                empty.textContent = "No saved questions yet.";
+                recentContainer.appendChild(empty);
+            } else {
+                recent.forEach(row => {
+                    const entry = document.createElement("div");
+                    entry.className = "analytics-entry";
+                    const question = document.createElement("div");
+                    question.textContent = row.question || "(Empty question)";
+                    const meta = document.createElement("small");
+                    const date = row.created_at ? new Date(row.created_at).toLocaleString() : "Date unavailable";
+                    meta.textContent = date + " · Source: " + (row.source_document || "Not recorded");
+                    entry.append(question, meta);
+                    recentContainer.appendChild(entry);
+                });
+            }
+
+            const sourceContainer = document.getElementById("analytics-sources");
+            sourceContainer.replaceChildren();
+            const sources = data.source_context || [];
+            if (!sources.length) {
+                const empty = document.createElement("p");
+                empty.className = "status-message";
+                empty.textContent = "No source context has been recorded yet.";
+                sourceContainer.appendChild(empty);
+            } else {
+                sources.forEach(row => {
+                    const entry = document.createElement("div");
+                    entry.className = "analytics-entry";
+                    const name = document.createElement("span");
+                    name.textContent = row.source_document || "Not recorded";
+                    const count = document.createElement("strong");
+                    count.textContent = " — " + (Number(row.question_count) || 0) + " question(s)";
+                    entry.append(name, count);
+                    sourceContainer.appendChild(entry);
+                });
+            }
+
+            analyticsStatus.textContent = "Analytics loaded successfully.";
+            analyticsContent.hidden = false;
+        } catch (error) {
+            analyticsStatus.textContent = "Unable to load analytics: " + error.message;
+        } finally {
+            analyticsRefreshButton.disabled = false;
+        }
+    }
+
+    analyticsRefreshButton.addEventListener("click", loadAnalytics);
+    loadAnalytics();
+
+    // GitHub dashboard
+    const statusElement = document.getElementById("github-status");
+    const contentElement = document.getElementById("github-content");
+    const issuesList = document.getElementById("issues-list");
+    const refreshButton = document.getElementById("refresh-github");
+
+    async function loadGitHubData() {
+        statusElement.textContent = "Loading GitHub information…";
+        contentElement.hidden = true;
+        refreshButton.disabled = true;
+
+        try {
+            const response = await fetch("/api/github");
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || "Could not load GitHub information.");
+            }
+
+            const repo = data.repository;
+            document.getElementById("repo-name").textContent = repo.name;
+            document.getElementById("repo-description").textContent = repo.description;
+            document.getElementById("repo-url").href = repo.url;
+            document.getElementById("repo-stars").textContent = repo.stars;
+            document.getElementById("repo-language").textContent = repo.language;
+            document.getElementById("repo-issues").textContent = repo.open_issues;
+            issuesList.replaceChildren();
+
+            if (data.issues.length === 0) {
+                const message = document.createElement("p");
+                message.className = "status-message";
+                message.textContent = "No open issues found.";
+                issuesList.appendChild(message);
+            } else {
+                data.issues.forEach(issue => {
+                    const item = document.createElement("div");
+                    item.className = "issue";
+
+                    const title = document.createElement("a");
+                    title.className = "github-link";
+                    title.href = issue.url;
+                    title.target = "_blank";
+                    title.rel = "noopener noreferrer";
+                    title.textContent = "#" + issue.number + " " + issue.title;
+
+                    const description = document.createElement("p");
+                    description.textContent = issue.body;
+
+                    item.appendChild(title);
+                    item.appendChild(description);
+                    issuesList.appendChild(item);
+                });
+            }
+
+            statusElement.textContent = "GitHub data loaded successfully.";
+            contentElement.hidden = false;
+        } catch (error) {
+            statusElement.textContent = "Unable to load GitHub data: " + error.message;
+        } finally {
+            refreshButton.disabled = false;
+        }
+    }
+
+    refreshButton.addEventListener("click", loadGitHubData);
+    loadGitHubData();
+    loadConversations({{ conversation_id | tojson }});
+</script>
 </body>
 </html>
